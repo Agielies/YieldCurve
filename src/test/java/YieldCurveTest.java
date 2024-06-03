@@ -64,7 +64,7 @@ public class YieldCurveTest extends TestCase {
 }
 
     public void testExtrapolationAfterLastDate() {
-        // Test exception handling for date after the last date in the yield curve
+        // Test extrapolation for date after the last date in the yield curve
         assertEquals(11.3, yieldCurve.getRate(LocalDate.of(2027, 1, 1), RateType.BID));
         assertEquals(11.35, yieldCurve.getRate(LocalDate.of(2027, 1, 1), RateType.ASK));
         assertEquals(11.325, yieldCurve.getRate(LocalDate.of(2027, 1, 1), RateType.MID));
