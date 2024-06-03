@@ -93,15 +93,6 @@ The solution approach was to:
   - Used for binary search operations to efficiently locate indices within the list of days from the start date.
   - The `Collections` utility class provides methods for searching and sorting, which are essential for maintaining the integrity of date-based operations.
 
-## Data Structures
-
-- **Primitive Types:** Used wherever possbile for efficiency.
-- **LocalDate:** Used for representing dates such as settlement date, next coupon date, etc.
-- **MonthDay:** Used for representing dates that recur annually, such as coupon dates.
-- **Map:** Used for storing and retrieving bond details efficiently, for debuggin and testing purposes.
-- **Array** Used to return clean and dirty prices, when both are required.
-- **Enums and Records:** Utilized for representing bond types and details in a type-safe manner.
-
 ## Potential Enhancements
 - **Use of Records**: 
   - Records could be used to store `TenorPoint` objects, encapsulating dates, bid rates, and ask rates in a single immutable data structure.
