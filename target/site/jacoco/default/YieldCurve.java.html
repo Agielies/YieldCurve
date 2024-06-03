@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>YieldCurve.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">yieldcurve</a> &gt; <a href="index.source.html" class="el_package">default</a> &gt; <span class="el_source">YieldCurve.java</span></div><h1>YieldCurve.java</h1><pre class="source lang-java linenums">import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.ArrayList;
+import java.util.Collections;
+
+public class YieldCurve {
+    private final List&lt;Double&gt; daysFromStart;
+    private final double firstDate;
+    private final Map&lt;RateType, List&lt;Double&gt;&gt; rateMap;
+
+    /**
+     * Constructs a YieldCurve object with the given dates, bid rates, and ask
+     * rates.
+     *
+     * @param dates    The list of dates for the yield curve.
+     * @param bidRates The list of bid rates corresponding to the dates.
+     * @param askRates The list of ask rates corresponding to the dates.
+     */
+<span class="fc" id="L20">    public YieldCurve(final List&lt;LocalDate&gt; dates, final List&lt;Double&gt; bidRates, final List&lt;Double&gt; askRates) {</span>
+<span class="fc" id="L21">        firstDate = dates.get(0).toEpochDay();</span>
+<span class="fc" id="L22">        this.daysFromStart = dates.stream().mapToDouble(date -&gt; date.toEpochDay() - firstDate).boxed().toList();</span>
+<span class="fc" id="L23">        rateMap = Map.of(</span>
+<span class="fc" id="L24">                RateType.BID, bidRates,</span>
+<span class="fc" id="L25">                RateType.ASK, askRates,</span>
+<span class="fc" id="L26">                RateType.MID, calculateMidRates(bidRates, askRates));</span>
+<span class="fc" id="L27">    }</span>
+
+    /**
+     * Calculates the mid rates based on the bid and ask rates.
+     *
+     * @param bidRates The list of bid rates.
+     * @param askRates The list of ask rates.
+     * @return The list of calculated mid rates.
+     */
+    private List&lt;Double&gt; calculateMidRates(final List&lt;Double&gt; bidRates, final List&lt;Double&gt; askRates) {
+<span class="fc" id="L37">        List&lt;Double&gt; midRates = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L38" title="All 2 branches covered.">        for (int i = 0; i &lt; bidRates.size(); i++) {</span>
+<span class="fc" id="L39">            double midRate = (bidRates.get(i) + askRates.get(i)) / 2;</span>
+<span class="fc" id="L40">            midRates.add(midRate);</span>
+        }
+<span class="fc" id="L42">        return midRates;</span>
+    }
+
+    /**
+     * Retrieves the rate for a given date and rate type.
+     *
+     * @param date     The date for which the rate is requested.
+     * @param rateType The type of rate requested (BID, ASK, or MID).
+     * @return The interpolated rate for the given date and rate type.
+     * @throws IllegalArgumentException If the date is before the first date in the
+     *                                  yield curve.
+     */
+    public double getRate(final LocalDate date, final RateType rateType) {
+<span class="fc" id="L55">        double days = (date.toEpochDay() - firstDate) - daysFromStart.get(0);</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (days &lt; 0) {</span>
+<span class="fc" id="L57">            throw new IllegalArgumentException(&quot;Date is before the first date in the yield curve.&quot;);</span>
+        }
+
+<span class="fc" id="L60">        List&lt;Double&gt; rates = rateMap.get(rateType);</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">        if (days &gt; daysFromStart.get(daysFromStart.size() - 1)) {</span>
+<span class="fc" id="L62">            return rates.get(rates.size() - 1);</span>
+        }
+
+<span class="fc" id="L65">        int index = Collections.binarySearch(daysFromStart, days);</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        index = (index &gt;= 0) ? index : -(index + 1) - 1;</span>
+
+<span class="fc" id="L68">        return linearInterpolate(</span>
+<span class="fc" id="L69">                days,</span>
+<span class="fc" id="L70">                daysFromStart.get(index),</span>
+<span class="fc" id="L71">                daysFromStart.get(index + 1),</span>
+<span class="fc" id="L72">                rates.get(index),</span>
+<span class="fc" id="L73">                rates.get(index + 1));</span>
+    }
+
+    /**
+     * Performs linear interpolation between two points.
+     *
+     * @param days         The number of days from the start date.
+     * @param previousDays The number of days from the start date for the previous
+     *                     point.
+     * @param nextDays     The number of days from the start date for the next
+     *                     point.
+     * @param previousRate The rate for the previous point.
+     * @param nextRate     The rate for the next point.
+     * @return The interpolated rate.
+     */
+    private double linearInterpolate(final double days, final double previousDays, final double nextDays,
+            final double previousRate,
+            final double nextRate) {
+<span class="fc" id="L91">        return previousRate + (nextRate - previousRate) * (days - previousDays) / (nextDays - previousDays);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>
